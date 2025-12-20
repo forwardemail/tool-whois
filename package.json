@@ -19,7 +19,7 @@
   "homepage": "https://github.com/cleandns-inc/tool-whois#readme",
   "license": "ISC",
   "main": "dist/index.js",
-  "packageManager": "pnpm@9.15.0",
+  "packageManager": "pnpm@9",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/cleandns-inc/tool-whois.git"
