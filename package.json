@@ -1,29 +1,32 @@
 {
   "name": "@cleandns/whois-rdap",
-  "version": "1.0.52",
   "description": "",
-  "type": "module",
-  "main": "dist/index.js",
-  "scripts": {
-    "build": "tsc",
-    "upload": "npm run build && npm version patch && npm publish"
+  "version": "1.0.52",
+  "author": "",
+  "bugs": {
+    "url": "https://github.com/cleandns-inc/tool-whois/issues"
   },
+  "dependencies": {
+    "debug": "^4.4.3",
+    "parse-domain": "^8.0.2",
+    "promise-socket": "^7.0.0"
+  },
+  "devDependencies": {
+    "@types/debug": "^4.1.12",
+    "@types/node": "^22.0.2",
+    "typescript": "^5.4.3"
+  },
+  "homepage": "https://github.com/cleandns-inc/tool-whois#readme",
+  "license": "ISC",
+  "main": "dist/index.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/cleandns-inc/tool-whois.git"
   },
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/cleandns-inc/tool-whois/issues"
+  "scripts": {
+    "build": "tsc",
+    "test": "npm run build && node --test dist/*.test.js",
+    "upload": "npm run build && npm version patch && npm publish"
   },
-  "homepage": "https://github.com/cleandns-inc/tool-whois#readme",
-  "devDependencies": {
-    "@types/node": "^22.0.2",
-    "typescript": "^5.4.3"
-  },
-  "dependencies": {
-    "parse-domain": "^8.0.2",
-    "promise-socket": "^7.0.0"
-  }
+  "type": "module"
 }
