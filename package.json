@@ -19,6 +19,9 @@
   "engines": {
     "node": ">= 18"
   },
+  "files": [
+    "dist"
+  ],
   "homepage": "https://github.com/forwardemail/tool-whois#readme",
   "license": "ISC",
   "main": "dist/index.js",
