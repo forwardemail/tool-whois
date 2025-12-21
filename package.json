@@ -7,9 +7,9 @@
     "url": "https://github.com/forwardemail/tool-whois/issues"
   },
   "dependencies": {
-    "debug": "^4.4.3",
-    "parse-domain": "^8.0.2",
-    "promise-socket": "^7.0.0"
+    "debug": "4.4.3",
+    "parse-domain": "8.0.2",
+    "promise-socket": "7.0.0"
   },
   "devDependencies": {
     "@types/debug": "^4.1.12",
