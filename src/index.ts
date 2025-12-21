@@ -1,3 +1,6 @@
+// Polyfills for Node.js 18 compatibility
+import "./polyfills.js";
+
 import { WhoisOptions, WhoisResponse, WhoisTimestampFields } from "../whois.js";
 import { parseIpResponse } from "./ip.js";
 import { determinePort43Domain, port43 } from "./port43.js";

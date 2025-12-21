@@ -1,5 +1,9 @@
 import { describe, it } from "node:test";
 import assert from "node:assert";
+
+// Import polyfills first
+import "./polyfills.js";
+
 import { toArray, escapeRegex, validateDomain } from "./index.js";
 
 // ============================================================================
@@ -356,5 +360,79 @@ describe("IP response parsing", () => {
 
     parseIpResponse("1.0.0.1", rdap, response);
     assert.strictEqual(response.registrar.name, "ARIN");
+  });
+});
+
+
+// ============================================================================
+// String.prototype.toWellFormed polyfill tests (Node.js 18 compatibility)
+// ============================================================================
+
+describe("String.prototype.toWellFormed polyfill", () => {
+  it("toWellFormed is available as a function", () => {
+    assert.strictEqual(typeof "".toWellFormed, "function");
+  });
+
+  it("returns same string for well-formed input", () => {
+    const str = "Hello, World!";
+    assert.strictEqual(str.toWellFormed(), str);
+  });
+
+  it("handles empty string", () => {
+    assert.strictEqual("".toWellFormed(), "");
+  });
+
+  it("handles valid surrogate pairs (emoji)", () => {
+    const emoji = "😀"; // U+1F600 = \uD83D\uDE00
+    assert.strictEqual(emoji.toWellFormed(), emoji);
+  });
+
+  it("replaces lone high surrogate with U+FFFD", () => {
+    const loneHigh = "abc\uD800def";
+    assert.strictEqual(loneHigh.toWellFormed(), "abc\uFFFDdef");
+  });
+
+  it("replaces lone low surrogate with U+FFFD", () => {
+    const loneLow = "abc\uDC00def";
+    assert.strictEqual(loneLow.toWellFormed(), "abc\uFFFDdef");
+  });
+
+  it("replaces lone high surrogate at end", () => {
+    const str = "test\uD800";
+    assert.strictEqual(str.toWellFormed(), "test\uFFFD");
+  });
+
+  it("handles multiple lone surrogates", () => {
+    const str = "\uD800\uD800";
+    assert.strictEqual(str.toWellFormed(), "\uFFFD\uFFFD");
+  });
+
+  it("preserves valid surrogate pairs among lone surrogates", () => {
+    const str = "\uD800\uD83D\uDE00\uDC00"; // lone high, valid pair, lone low
+    assert.strictEqual(str.toWellFormed(), "\uFFFD😀\uFFFD");
+  });
+});
+
+describe("String.prototype.isWellFormed polyfill", () => {
+  it("isWellFormed is available as a function", () => {
+    assert.strictEqual(typeof "".isWellFormed, "function");
+  });
+
+  it("returns true for well-formed strings", () => {
+    assert.strictEqual("Hello".isWellFormed(), true);
+    assert.strictEqual("".isWellFormed(), true);
+    assert.strictEqual("😀".isWellFormed(), true);
+  });
+
+  it("returns false for lone high surrogate", () => {
+    assert.strictEqual("test\uD800".isWellFormed(), false);
+  });
+
+  it("returns false for lone low surrogate", () => {
+    assert.strictEqual("test\uDC00".isWellFormed(), false);
+  });
+
+  it("returns true for valid surrogate pair", () => {
+    assert.strictEqual("\uD83D\uDE00".isWellFormed(), true);
   });
 });

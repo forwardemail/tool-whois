@@ -16,6 +16,9 @@
     "@types/node": "^22.0.2",
     "typescript": "^5.4.3"
   },
+  "engines": {
+    "node": ">= 18"
+  },
   "homepage": "https://github.com/cleandns-inc/tool-whois#readme",
   "license": "ISC",
   "main": "dist/index.js",
