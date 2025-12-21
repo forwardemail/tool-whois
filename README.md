@@ -43,7 +43,7 @@ An object containing the RDAP or WHOIS information for the domain.
 ### Example
 
 ```typescript
-import { whois } from '@cleandns/whois-rdap';
+import { whois } from '@forwardemail/whois-rdap';
 
 whois('example.com')
   .then((response) => {
@@ -57,7 +57,7 @@ whois('example.com')
 ## Installation
 
 ```
-npm install @cleandns/whois
+npm install @forwardemail/whois
 ```
 
 ## Caveats / limitations

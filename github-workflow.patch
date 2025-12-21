@@ -56,7 +56,7 @@ index 82d953a..5c966d9 100644
    "repository": {
 @@ -19,10 +20,12 @@
    },
-   "homepage": "https://github.com/cleandns-inc/tool-whois#readme",
+   "homepage": "https://github.com/forwardemail/tool-whois#readme",
    "devDependencies": {
 +    "@types/debug": "^4.1.12",
      "@types/node": "^22.0.2",
