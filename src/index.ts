@@ -1,3 +1,6 @@
+// Polyfills for Node.js 18 compatibility
+import "./polyfills.js";
+
 import { WhoisOptions, WhoisResponse, WhoisTimestampFields } from "../whois.js";
 import { parseIpResponse } from "./ip.js";
 import { determinePort43Domain, port43 } from "./port43.js";
@@ -5,10 +8,19 @@ import { findInObject } from "./utils/findInObject.js";
 import { fixArrays } from "./utils/fixArrays.js";
 import { ianaIdToRegistrar } from "./utils/ianaIdToRegistrar.js";
 import { tldToRdap } from "./utils/tldToRdap.js";
-import { normalizeWhoisStatus } from "./whoisStatus.js";
 import { resolve4 } from "dns/promises";
+import { toArray } from "./utils/toArray.js";
+import { validateDomain } from "./utils/validateDomain.js";
+import { findStatus } from "./utils/findStatus.js";
+import { findNameservers } from "./utils/findNameservers.js";
+import { findTimestamps } from "./utils/findTimestamps.js";
+import createDebug from "debug";
+import { escapeRegex } from "./utils/escapeRegex.js";
 
-const eventMap = new Map<string, WhoisTimestampFields>([
+// Debug logger - enable with DEBUG=whois:* environment variable
+const debug = createDebug("whois:rdap");
+
+export const eventMap = new Map<string, WhoisTimestampFields>([
   ["registration", "created"],
   ["last changed", "updated"],
   ["expiration", "expires"],
@@ -21,10 +33,27 @@ export async function whois(
 ): Promise<WhoisResponse> {
   const _fetch = options.fetch || fetch;
 
-  let domain = origDomain;
+  // Validate and sanitize input
+  let domain: string;
+  try {
+    domain = validateDomain(origDomain);
+  } catch (e: any) {
+    return {
+      found: false,
+      statusCode: 400,
+      error: e.message,
+      registrar: { id: 0, name: null },
+      reseller: null,
+      status: [],
+      statusDelta: [],
+      nameservers: [],
+      ts: { created: null, updated: null, expires: null },
+    };
+  }
+
   let url: string | null = null;
 
-  [domain, url] = await tldToRdap(origDomain);
+  [domain, url] = await tldToRdap(domain);
 
   const response: WhoisResponse = {
     found: false,
@@ -59,7 +88,6 @@ export async function whois(
   thinResponse = await _fetch(thinRdap)
     .then((r) => {
       response.statusCode = r.status;
-      // console.log({ ok: r.ok, status: r.status, statusText: r.statusText });
       if (r.status >= 200 && r.status < 400) {
         return r.json() as any;
       }
@@ -67,7 +95,7 @@ export async function whois(
       return null;
     })
     .catch((error: Error) => {
-      console.warn(`thin RDAP lookup failure: ${error.message}`);
+      debug("thin RDAP lookup failure for %s: %s", domain, error.message);
       return null;
     });
 
@@ -94,14 +122,14 @@ export async function whois(
   let thickResponse: any = null;
 
   if (!options.thinOnly && thickRdap) {
-    // console.log(`fetching thick RDAP: ${thickRdap}`);
+    debug("fetching thick RDAP: %s", thickRdap);
     thickResponse = await _fetch(thickRdap)
       .then((r) => r.json() as any)
       .catch(() => null);
     if (thickResponse && !thickResponse.errorCode && !thickResponse.error) {
     } else {
       thickResponse = null;
-      // console.warn(`thick RDAP failed for ${domain}`);
+      debug("thick RDAP failed for %s", domain);
     }
   }
 
@@ -113,10 +141,14 @@ export async function whois(
   const resellers: any[] = [];
 
   async function extractRegistrarsAndResellers(response: any, url: string, isThick?: boolean) {
-    for (const ent of [
-      ...(response.entities || []),
+    // Use toArray to safely handle entities that might not be iterable
+    const entities = toArray(response.entities);
+    const entityList = [
+      ...entities,
       response.entity ? { events: response.events, ...response.entity } : null,
-    ].filter(Boolean)) {
+    ].filter(Boolean);
+
+    for (const ent of entityList) {
       if (ent.roles?.includes("registrar") || ent.role === "registrar") {
         const pubIds: any[] = [];
         if (ent.publicIds) {
@@ -145,7 +177,6 @@ export async function whois(
           ;
 
         if (reg) {
-          // console.log(ent.vcardArray);
           const id = typeof reg === 'object' ? 0 : reg;
           const name =
             (parseInt(id) == id
@@ -157,8 +188,10 @@ export async function whois(
               (el: any[]) => el[3],
               reg
             );
+          // Safely handle ent.entities
+          const entEntities = toArray(ent.entities);
           const email =
-            [ent, ...(ent.entities || [])]
+            [ent, ...entEntities]
               .filter((e) => e?.vcardArray)
               .map((e) =>
                 findInObject(
@@ -171,7 +204,7 @@ export async function whois(
               .filter(Boolean)?.[0] || "";
 
           const abuseEmail =
-            [ent, ...(ent.entities || [])]
+            [ent, ...entEntities]
               .filter((e) => e?.vcardArray)
               .map((e) =>
                 findInObject(
@@ -187,10 +220,11 @@ export async function whois(
             ent.events || response.events || ent.enents || response.enents;
           registrars.push({ id, name, email, abuseEmail, events });
         }
-        // handles .ca
+        // handles .ca - with safe optional chaining
         else if (ent.vcardArray?.[1]?.[3]?.[3] === 'registrar') {
+          const entEntities = toArray(ent.entities);
           const email =
-            [ent, ...(ent.entities || [])]
+            [ent, ...entEntities]
               .filter((e) => e?.vcardArray)
               .map((e) =>
                 findInObject(
@@ -203,7 +237,7 @@ export async function whois(
               .filter(Boolean)?.[0] || "";
 
           const abuseEmail =
-            [ent, ...(ent.entities || [])]
+            [ent, ...entEntities]
               .filter((e) => e?.vcardArray)
               .map((e) =>
                 findInObject(
@@ -215,12 +249,14 @@ export async function whois(
               )
               .filter(Boolean)?.[0] || "";
 
-          registrars.push({ id: 0, name: ent.vcardArray[1][1][3], email, abuseEmail, events: ent.events || response.events || ent.enents || response.enents });
+          const vcardName = ent.vcardArray?.[1]?.[1]?.[3] || '';
+          registrars.push({ id: 0, name: vcardName, email, abuseEmail, events: ent.events || response.events || ent.enents || response.enents });
         }
-        // handles .si
-        else if (ent.vcardArray && ent.vcardArray[1] && ent.vcardArray[1].find((el: string[]) => el[0] === 'fn')) {
+        // handles .si - with safe array access
+        else if (ent.vcardArray && Array.isArray(ent.vcardArray[1]) && ent.vcardArray[1].find((el: string[]) => el[0] === 'fn')) {
+          const entEntities = toArray(ent.entities);
           const email =
-            [ent, ...(ent.entities || [])]
+            [ent, ...entEntities]
               .filter((e) => e?.vcardArray)
               .map((e) =>
                 findInObject(
@@ -233,7 +269,7 @@ export async function whois(
               .filter(Boolean)?.[0] || "";
 
           const abuseEmail =
-            [ent, ...(ent.entities || [])]
+            [ent, ...entEntities]
               .filter((e) => e?.vcardArray)
               .map((e) =>
                 findInObject(
@@ -260,7 +296,9 @@ export async function whois(
             registrars.push({ id, name, email, abuseEmail, events: ent.events || response.events || ent.enents || response.enents });
           }
           else {
-            registrars.push({ id: ent.handle || 0, name: ent.vcardArray[1].find((el: string[]) => el[0] === 'fn')[3], email, abuseEmail, events: ent.events || response.events || ent.enents || response.enents });
+            const fnEntry = ent.vcardArray[1].find((el: string[]) => el[0] === 'fn');
+            const name = fnEntry ? fnEntry[3] : ent.handle || '';
+            registrars.push({ id: ent.handle || 0, name, email, abuseEmail, events: ent.events || response.events || ent.enents || response.enents });
           }
         }
         // handles .ar
@@ -285,8 +323,9 @@ export async function whois(
             (el: any[]) => el[3],
             id
           );
+        const entEntities = toArray(ent.entities);
         const email =
-          [ent, ...(ent.entities || [])]
+          [ent, ...entEntities]
             .filter((e) => e?.vcardArray)
             .map((e) =>
               findInObject(
@@ -299,7 +338,7 @@ export async function whois(
             .filter(Boolean)?.[0] || "";
 
         const abuseEmail =
-          [ent, ...(ent.entities || [])]
+          [ent, ...entEntities]
             .filter((e) => e?.vcardArray)
             .map((e) =>
               findInObject(
@@ -391,67 +430,4 @@ export async function whois(
   if (type === 'ip') parseIpResponse(domain, thinResponse, response);
 
   return response;
-}
-
-function findStatus(statuses: string | string[], domain: string): string[] {
-  // console.warn({ domain, statuses });
-
-  return (Array.isArray(statuses)
-    ? statuses
-    : statuses && typeof statuses === "object"
-      ? Object.keys(statuses)
-      : typeof statuses === "string"
-        ? statuses.trim().split(/\s*,\s*/)
-        : []
-  ).map((status) => normalizeWhoisStatus(status));
-}
-
-function findNameservers(values: any[]): string[] {
-  let nameservers: any[] = [];
-  if (Array.isArray(values)) {
-    nameservers = values;
-  } else if (typeof values === "object") {
-    nameservers = Object.values(values);
-  }
-
-  return nameservers
-    .map((ns) => ns.ldhName || ns.ldnName || ns.ipAddresses?.v4)
-    .flat()
-    .filter((ns) => ns)
-    .map((ns) => (ns.stringValue || ns).toLocaleLowerCase())
-    .sort();
-}
-
-function findTimestamps(values: any[]) {
-  const ts: Record<WhoisTimestampFields, Date | null> = {
-    created: null,
-    updated: null,
-    expires: null,
-  };
-
-  let events: any = [];
-
-  if (Array.isArray(values)) {
-    events = values;
-  } else if (typeof values === "object") {
-    events = Object.values(values);
-  }
-
-  for (const [event, field] of eventMap) {
-    events.find(
-      (ev: any) => {
-        const isMatch = ev?.eventAction?.toLocaleLowerCase() === event && ev.eventDate;
-        if (isMatch) {
-          const d = new Date(ev.eventDate.toString().replace(/\+0000Z$/, "Z"));
-          // console.log(field, ev.eventDate, d);
-          if (!isNaN(d.valueOf())) {
-            ts[field] = d;
-            return true;
-          }
-        }
-      }
-    );
-  }
-
-  return ts;
 }

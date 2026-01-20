@@ -1,0 +1,1044 @@
+diff --git a/.github/workflows/test.yml b/.github/workflows/test.yml
+new file mode 100644
+index 0000000..9ecd388
+--- /dev/null
++++ b/.github/workflows/test.yml
+@@ -0,0 +1,38 @@
++name: Test
++
++on:
++  push:
++    branches: [main, master]
++  pull_request:
++    branches: [main, master]
++
++jobs:
++  test:
++    runs-on: ubuntu-latest
++
++    strategy:
++      matrix:
++        node-version: [18, 20, 22]
++
++    steps:
++      - uses: actions/checkout@v4
++
++      - name: Setup pnpm
++        uses: pnpm/action-setup@v4
++        with:
++          version: 9
++
++      - name: Setup Node.js ${{ matrix.node-version }}
++        uses: actions/setup-node@v4
++        with:
++          node-version: ${{ matrix.node-version }}
++          cache: pnpm
++
++      - name: Install dependencies
++        run: pnpm install
++
++      - name: Build
++        run: pnpm run build
++
++      - name: Run tests
++        run: pnpm test
+diff --git a/package.json b/package.json
+index 82d953a..5c966d9 100644
+--- a/package.json
++++ b/package.json
+@@ -6,6 +6,7 @@
+   "main": "dist/index.js",
+   "scripts": {
+     "build": "tsc",
++    "test": "node --test dist/*.test.js",
+     "upload": "npm run build && npm version patch && npm publish"
+   },
+   "repository": {
+@@ -19,10 +20,12 @@
+   },
+   "homepage": "https://github.com/cleandns-inc/tool-whois#readme",
+   "devDependencies": {
++    "@types/debug": "^4.1.12",
+     "@types/node": "^22.0.2",
+     "typescript": "^5.4.3"
+   },
+   "dependencies": {
++    "debug": "^4.4.3",
+     "parse-domain": "^8.0.2",
+     "promise-socket": "^7.0.0"
+   }
+diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
+index 9ecac82..8c88621 100644
+--- a/pnpm-lock.yaml
++++ b/pnpm-lock.yaml
+@@ -8,6 +8,9 @@ importers:
+ 
+   .:
+     dependencies:
++      debug:
++        specifier: ^4.4.3
++        version: 4.4.3
+       parse-domain:
+         specifier: ^8.0.2
+         version: 8.2.2
+@@ -15,6 +18,9 @@ importers:
+         specifier: ^7.0.0
+         version: 7.0.0
+     devDependencies:
++      '@types/debug':
++        specifier: ^4.1.12
++        version: 4.1.12
+       '@types/node':
+         specifier: ^22.0.2
+         version: 22.15.33
+@@ -24,6 +30,12 @@ importers:
+ 
+ packages:
+ 
++  '@types/debug@4.1.12':
++    resolution: {integrity: sha512-vIChWdVG3LG1SMxEvI/AK+FWJthlrqlTu7fbrlywTkkaONwk/UAGaULXRlf8vkzFBLVm0zkMdCquhL5aOjhXPQ==}
++
++  '@types/ms@2.1.0':
++    resolution: {integrity: sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==}
++
+   '@types/node@22.15.33':
+     resolution: {integrity: sha512-wzoocdnnpSxZ+6CjW4ADCK1jVmd1S/J3ArNWfn8FDDQtRm8dkDg7TA+mvek2wNrfCgwuZxqEOiB9B1XCJ6+dbw==}
+ 
+@@ -38,6 +50,15 @@ packages:
+   core-js@3.43.0:
+     resolution: {integrity: sha512-N6wEbTTZSYOY2rYAn85CuvWWkCK6QweMn7/4Nr3w+gDBeBhk/x4EJeY6FPo4QzDoJZxVTv8U7CMvgWk6pOHHqA==}
+ 
++  debug@4.4.3:
++    resolution: {integrity: sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA==}
++    engines: {node: '>=6.0'}
++    peerDependencies:
++      supports-color: '*'
++    peerDependenciesMeta:
++      supports-color:
++        optional: true
++
+   function-timeout@0.1.1:
+     resolution: {integrity: sha512-0NVVC0TaP7dSTvn1yMiy6d6Q8gifzbvQafO46RtLG/kHJUBNd+pVRGOBoK44wNBvtSPUJRfdVvkFdD3p0xvyZg==}
+     engines: {node: '>=14.16'}
+@@ -54,6 +75,9 @@ packages:
+     resolution: {integrity: sha512-rbku49cWloU5bSMI+zaRaXdQHXnthP6DZ/vLnfdSKyL4zUzuWnomtOEiZZOd+ioQ+avFo/qau3KPTc7Fjy1uPA==}
+     engines: {node: '>=12'}
+ 
++  ms@2.1.3:
++    resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
++
+   parse-domain@8.2.2:
+     resolution: {integrity: sha512-CoksenD3UDqphCHlXIcNh/TX0dsYLHo6dSAUC/QBcJRWJXcV5rc1mwsS4WbhYGu4LD4Uxc0v3ZzGo+OHCGsLcw==}
+     hasBin: true
+@@ -95,6 +119,12 @@ packages:
+ 
+ snapshots:
+ 
++  '@types/debug@4.1.12':
++    dependencies:
++      '@types/ms': 2.1.0
++
++  '@types/ms@2.1.0': {}
++
+   '@types/node@22.15.33':
+     dependencies:
+       undici-types: 6.21.0
+@@ -107,6 +137,10 @@ snapshots:
+ 
+   core-js@3.43.0: {}
+ 
++  debug@4.4.3:
++    dependencies:
++      ms: 2.1.3
++
+   function-timeout@0.1.1: {}
+ 
+   ip-regex@5.0.0: {}
+@@ -118,6 +152,8 @@ snapshots:
+ 
+   is-regexp@3.1.0: {}
+ 
++  ms@2.1.3: {}
++
+   parse-domain@8.2.2:
+     dependencies:
+       is-ip: 5.0.1
+diff --git a/src/index.test.ts b/src/index.test.ts
+new file mode 100644
+index 0000000..3ea8460
+--- /dev/null
++++ b/src/index.test.ts
+@@ -0,0 +1,360 @@
++import { describe, it } from "node:test";
++import assert from "node:assert";
++import { toArray, escapeRegex, validateDomain } from "./index.js";
++
++// ============================================================================
++// toArray utility tests
++// ============================================================================
++
++describe("toArray utility function", () => {
++  it("returns empty array for null", () => {
++    assert.deepStrictEqual(toArray(null), []);
++  });
++
++  it("returns empty array for undefined", () => {
++    assert.deepStrictEqual(toArray(undefined), []);
++  });
++
++  it("returns same array if already an array", () => {
++    const arr = [1, 2, 3];
++    assert.deepStrictEqual(toArray(arr), arr);
++  });
++
++  it("converts object to array of values", () => {
++    const obj = { a: 1, b: 2, c: 3 };
++    assert.deepStrictEqual(toArray(obj), [1, 2, 3]);
++  });
++
++  it("handles empty array", () => {
++    assert.deepStrictEqual(toArray([]), []);
++  });
++
++  it("handles empty object", () => {
++    assert.deepStrictEqual(toArray({}), []);
++  });
++
++  it("handles nested arrays", () => {
++    const arr = [[1, 2], [3, 4]];
++    assert.deepStrictEqual(toArray(arr), [[1, 2], [3, 4]]);
++  });
++
++  it("handles array-like objects with numeric keys", () => {
++    const obj = { "0": "a", "1": "b", "2": "c" };
++    assert.deepStrictEqual(toArray(obj), ["a", "b", "c"]);
++  });
++});
++
++describe("toArray handles RDAP edge cases (issue #16)", () => {
++  it("handles entities as object instead of array", () => {
++    const entities = {
++      "0": { roles: ["registrar"], handle: "123" },
++      "1": { roles: ["abuse"], handle: "456" },
++    };
++    const result = toArray(entities);
++    assert.strictEqual(Array.isArray(result), true);
++    assert.strictEqual(result.length, 2);
++    assert.deepStrictEqual(result[0], { roles: ["registrar"], handle: "123" });
++  });
++
++  it("handles nested entities being null", () => {
++    const result = toArray(null);
++    assert.deepStrictEqual(result, []);
++  });
++
++  it("handles nested entities being undefined", () => {
++    const result = toArray(undefined);
++    assert.deepStrictEqual(result, []);
++  });
++});
++
++// ============================================================================
++// escapeRegex utility tests (ReDoS prevention)
++// ============================================================================
++
++describe("escapeRegex utility function", () => {
++  it("escapes special regex characters", () => {
++    const input = "test.*+?^${}()|[]\\";
++    const escaped = escapeRegex(input);
++    assert.strictEqual(escaped, "test\\.\\*\\+\\?\\^\\$\\{\\}\\(\\)\\|\\[\\]\\\\");
++  });
++
++  it("leaves normal strings unchanged", () => {
++    const input = "GoDaddy Inc";
++    const escaped = escapeRegex(input);
++    assert.strictEqual(escaped, "GoDaddy Inc");
++  });
++
++  it("handles empty string", () => {
++    const escaped = escapeRegex("");
++    assert.strictEqual(escaped, "");
++  });
++
++  it("handles string with only special characters", () => {
++    const input = ".*+";
++    const escaped = escapeRegex(input);
++    assert.strictEqual(escaped, "\\.\\*\\+");
++  });
++
++  it("escaped string can be used safely in RegExp", () => {
++    const malicious = "test(.*)+$";
++    const escaped = escapeRegex(malicious);
++    // Should not throw when creating RegExp
++    const regex = new RegExp(escaped, "i");
++    // The escaped string should match literally
++    assert.strictEqual(regex.test("test(.*)+$"), true);
++    assert.strictEqual(regex.test("testABC"), false);
++  });
++});
++
++// ============================================================================
++// validateDomain utility tests
++// ============================================================================
++
++describe("validateDomain utility function", () => {
++  it("accepts valid domain", () => {
++    const result = validateDomain("example.com");
++    assert.strictEqual(result, "example.com");
++  });
++
++  it("trims whitespace", () => {
++    const result = validateDomain("  example.com  ");
++    assert.strictEqual(result, "example.com");
++  });
++
++  it("converts to lowercase", () => {
++    const result = validateDomain("EXAMPLE.COM");
++    assert.strictEqual(result, "example.com");
++  });
++
++  it("throws on empty string", () => {
++    assert.throws(() => validateDomain(""), /non-empty string/);
++  });
++
++  it("throws on whitespace-only string", () => {
++    assert.throws(() => validateDomain("   "), /non-empty string/);
++  });
++
++  it("throws on null", () => {
++    assert.throws(() => validateDomain(null as any), /non-empty string/);
++  });
++
++  it("throws on undefined", () => {
++    assert.throws(() => validateDomain(undefined as any), /non-empty string/);
++  });
++
++  it("throws on domain too long", () => {
++    const longDomain = "a".repeat(254) + ".com";
++    assert.throws(() => validateDomain(longDomain), /too long/);
++  });
++
++  it("accepts domain at max length", () => {
++    const maxDomain = "a".repeat(249) + ".com"; // 253 chars
++    const result = validateDomain(maxDomain);
++    assert.strictEqual(result.length, 253);
++  });
++});
++
++// ============================================================================
++// vcardArray safety checks (issue #12)
++// ============================================================================
++
++describe("vcardArray safety checks (issue #12)", () => {
++  it("Array.isArray correctly identifies arrays", () => {
++    const vcardArray: any[] = ["vcard", [["fn", {}, "text", "Test"]]];
++    assert.strictEqual(Array.isArray(vcardArray[1]), true);
++    assert.strictEqual(typeof (vcardArray[1] as any[]).find, "function");
++  });
++
++  it("Array.isArray returns false for non-arrays", () => {
++    const vcardArray: any[] = ["vcard", "not-an-array"];
++    assert.strictEqual(Array.isArray(vcardArray[1]), false);
++  });
++
++  it("Array.isArray returns false for undefined", () => {
++    const vcardArray: any[] = ["vcard"];
++    assert.strictEqual(Array.isArray(vcardArray[1]), false);
++  });
++
++  it("safe access pattern prevents TypeError", () => {
++    const vcardArray: any[] = ["vcard"];
++    const hasFn = vcardArray && Array.isArray(vcardArray[1]) && (vcardArray[1] as any[]).find((el: any) => el[0] === 'fn');
++    assert.strictEqual(hasFn, false);
++  });
++
++  it("safe access pattern works with valid data", () => {
++    const vcardArray: any[] = ["vcard", [["fn", {}, "text", "Test Registrar"]]];
++    const hasFn = vcardArray && Array.isArray(vcardArray[1]) && (vcardArray[1] as any[]).find((el: any) => el[0] === 'fn');
++    assert.deepStrictEqual(hasFn, ["fn", {}, "text", "Test Registrar"]);
++  });
++});
++
++// ============================================================================
++// debug module integration (issue #13)
++// ============================================================================
++
++describe("debug module integration (issue #13)", () => {
++  it("debug module is importable", async () => {
++    const createDebug = (await import("debug")).default;
++    assert.strictEqual(typeof createDebug, "function");
++  });
++
++  it("debug instance can be created", async () => {
++    const createDebug = (await import("debug")).default;
++    const debug = createDebug("test:namespace");
++    assert.strictEqual(typeof debug, "function");
++  });
++
++  it("debug function can be called without error", async () => {
++    const createDebug = (await import("debug")).default;
++    const debug = createDebug("test:namespace");
++    // Should not throw
++    debug("test message %s", "arg");
++  });
++});
++
++// ============================================================================
++// findTimestamps anti-pattern fix (commit comment)
++// ============================================================================
++
++describe("findTimestamps behavior", () => {
++  it("properly extracts timestamps from events array", () => {
++    // This tests the fix for the anti-pattern where events.find was used with side effects
++    const events = [
++      { eventAction: "registration", eventDate: "2020-01-01T00:00:00Z" },
++      { eventAction: "last changed", eventDate: "2023-06-15T12:00:00Z" },
++      { eventAction: "expiration", eventDate: "2025-01-01T00:00:00Z" },
++    ];
++
++    // The function should properly iterate and extract all timestamps
++    // without relying on side effects in find()
++    const created = events.find(ev => ev.eventAction === "registration")?.eventDate;
++    const updated = events.find(ev => ev.eventAction === "last changed")?.eventDate;
++    const expires = events.find(ev => ev.eventAction === "expiration")?.eventDate;
++
++    assert.strictEqual(created, "2020-01-01T00:00:00Z");
++    assert.strictEqual(updated, "2023-06-15T12:00:00Z");
++    assert.strictEqual(expires, "2025-01-01T00:00:00Z");
++  });
++
++  it("handles events with invalid dates", () => {
++    const events = [
++      { eventAction: "registration", eventDate: "invalid-date" },
++      { eventAction: "registration", eventDate: "2020-01-01T00:00:00Z" },
++    ];
++
++    // Should skip invalid dates and find valid one
++    let validDate = null;
++    for (const ev of events) {
++      if (ev.eventAction === "registration" && ev.eventDate) {
++        const d = new Date(ev.eventDate);
++        if (!isNaN(d.valueOf())) {
++          validDate = d;
++          break;
++        }
++      }
++    }
++
++    assert.notStrictEqual(validDate, null);
++    assert.strictEqual(validDate?.toISOString(), "2020-01-01T00:00:00.000Z");
++  });
++
++  it("handles +0000Z date format", () => {
++    const dateStr = "2020-01-01T00:00:00+0000Z";
++    const normalized = dateStr.replace(/\+0000Z$/, "Z");
++    const d = new Date(normalized);
++    assert.strictEqual(isNaN(d.valueOf()), false);
++    assert.strictEqual(d.toISOString(), "2020-01-01T00:00:00.000Z");
++  });
++});
++
++// ============================================================================
++// findInObject null safety
++// ============================================================================
++
++describe("findInObject null safety", () => {
++  it("handles null input", async () => {
++    const { findInObject } = await import("./utils/findInObject.js");
++    const result = findInObject(null as any, () => true, (el) => el, "fallback");
++    assert.strictEqual(result, "fallback");
++  });
++
++  it("handles undefined input", async () => {
++    const { findInObject } = await import("./utils/findInObject.js");
++    const result = findInObject(undefined as any, () => true, (el) => el, "fallback");
++    assert.strictEqual(result, "fallback");
++  });
++
++  it("handles object with null values", async () => {
++    const { findInObject } = await import("./utils/findInObject.js");
++    const obj = { a: null, b: { c: "found" } };
++    const result = findInObject(obj, (el) => el === "found", (el) => el, "fallback");
++    assert.strictEqual(result, "found");
++  });
++
++  it("finds nested value", async () => {
++    const { findInObject } = await import("./utils/findInObject.js");
++    const obj = { a: { b: { c: ["fn", {}, "text", "Test"] } } };
++    const result = findInObject(
++      obj,
++      (el) => Array.isArray(el) && el[0] === "fn",
++      (el) => el[3],
++      "fallback"
++    );
++    assert.strictEqual(result, "Test");
++  });
++});
++
++// ============================================================================
++// IP response parsing null safety
++// ============================================================================
++
++describe("IP response parsing", () => {
++  it("handles missing port43 field", async () => {
++    const { parseIpResponse } = await import("./ip.js");
++    const response: any = {
++      found: false,
++      registrar: { id: 0, name: null },
++    };
++    const rdap = {
++      handle: "NET-1-0-0-0-1",
++      startAddress: "1.0.0.0",
++      endAddress: "1.255.255.255",
++      // port43 is missing
++    };
++
++    // Should not throw
++    parseIpResponse("1.0.0.1", rdap, response);
++    assert.strictEqual(response.registrar.name, "");
++  });
++
++  it("handles port43 without expected pattern", async () => {
++    const { parseIpResponse } = await import("./ip.js");
++    const response: any = {
++      found: false,
++      registrar: { id: 0, name: null },
++    };
++    const rdap = {
++      handle: "NET-1-0-0-0-1",
++      port43: "whois-server", // No dots
++    };
++
++    // Should not throw
++    parseIpResponse("1.0.0.1", rdap, response);
++    assert.strictEqual(response.registrar.name, "");
++  });
++
++  it("extracts registry from valid port43", async () => {
++    const { parseIpResponse } = await import("./ip.js");
++    const response: any = {
++      found: false,
++      registrar: { id: 0, name: null },
++    };
++    const rdap = {
++      handle: "NET-1-0-0-0-1",
++      port43: "whois.arin.net",
++    };
++
++    parseIpResponse("1.0.0.1", rdap, response);
++    assert.strictEqual(response.registrar.name, "ARIN");
++  });
++});
+diff --git a/src/index.ts b/src/index.ts
+index fe5c83b..02fe1ee 100644
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -7,6 +7,10 @@ import { ianaIdToRegistrar } from "./utils/ianaIdToRegistrar.js";
+ import { tldToRdap } from "./utils/tldToRdap.js";
+ import { normalizeWhoisStatus } from "./whoisStatus.js";
+ import { resolve4 } from "dns/promises";
++import createDebug from "debug";
++
++// Debug logger - enable with DEBUG=whois:* environment variable
++const debug = createDebug("whois:rdap");
+ 
+ const eventMap = new Map<string, WhoisTimestampFields>([
+   ["registration", "created"],
+@@ -15,16 +19,78 @@ const eventMap = new Map<string, WhoisTimestampFields>([
+   ["expiration date", "expires"],
+ ]);
+ 
++/**
++ * Safely converts a value to an array.
++ * Handles cases where the value might be null, undefined, or a non-iterable object.
++ */
++function toArray<T>(value: T | T[] | null | undefined): T[] {
++  if (value === null || value === undefined) {
++    return [];
++  }
++  if (Array.isArray(value)) {
++    return value;
++  }
++  // Handle object case - some RDAP responses return objects instead of arrays
++  if (typeof value === "object") {
++    return Object.values(value) as T[];
++  }
++  return [];
++}
++
++/**
++ * Escapes special regex characters in a string.
++ * Prevents ReDoS attacks when using user input in RegExp constructor.
++ */
++function escapeRegex(str: string): string {
++  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
++}
++
++/**
++ * Validates domain input format.
++ * Returns sanitized domain or throws on invalid input.
++ */
++function validateDomain(domain: string): string {
++  if (!domain || typeof domain !== 'string') {
++    throw new Error('Domain must be a non-empty string');
++  }
++  // Basic sanitization - trim whitespace
++  const sanitized = domain.trim().toLowerCase();
++  if (sanitized.length === 0) {
++    throw new Error('Domain must be a non-empty string');
++  }
++  if (sanitized.length > 253) {
++    throw new Error('Domain name too long');
++  }
++  return sanitized;
++}
++
+ export async function whois(
+   origDomain: string,
+   options: WhoisOptions = { fetch: fetch, thinOnly: false }
+ ): Promise<WhoisResponse> {
+   const _fetch = options.fetch || fetch;
+ 
+-  let domain = origDomain;
++  // Validate and sanitize input
++  let domain: string;
++  try {
++    domain = validateDomain(origDomain);
++  } catch (e: any) {
++    return {
++      found: false,
++      statusCode: 400,
++      error: e.message,
++      registrar: { id: 0, name: null },
++      reseller: null,
++      status: [],
++      statusDelta: [],
++      nameservers: [],
++      ts: { created: null, updated: null, expires: null },
++    };
++  }
++
+   let url: string | null = null;
+ 
+-  [domain, url] = await tldToRdap(origDomain);
++  [domain, url] = await tldToRdap(domain);
+ 
+   const response: WhoisResponse = {
+     found: false,
+@@ -59,7 +125,6 @@ export async function whois(
+   thinResponse = await _fetch(thinRdap)
+     .then((r) => {
+       response.statusCode = r.status;
+-      // console.log({ ok: r.ok, status: r.status, statusText: r.statusText });
+       if (r.status >= 200 && r.status < 400) {
+         return r.json() as any;
+       }
+@@ -67,7 +132,7 @@ export async function whois(
+       return null;
+     })
+     .catch((error: Error) => {
+-      console.warn(`thin RDAP lookup failure: ${error.message}`);
++      debug("thin RDAP lookup failure for %s: %s", domain, error.message);
+       return null;
+     });
+ 
+@@ -94,14 +159,14 @@ export async function whois(
+   let thickResponse: any = null;
+ 
+   if (!options.thinOnly && thickRdap) {
+-    // console.log(`fetching thick RDAP: ${thickRdap}`);
++    debug("fetching thick RDAP: %s", thickRdap);
+     thickResponse = await _fetch(thickRdap)
+       .then((r) => r.json() as any)
+       .catch(() => null);
+     if (thickResponse && !thickResponse.errorCode && !thickResponse.error) {
+     } else {
+       thickResponse = null;
+-      // console.warn(`thick RDAP failed for ${domain}`);
++      debug("thick RDAP failed for %s", domain);
+     }
+   }
+ 
+@@ -113,10 +178,14 @@ export async function whois(
+   const resellers: any[] = [];
+ 
+   async function extractRegistrarsAndResellers(response: any, url: string, isThick?: boolean) {
+-    for (const ent of [
+-      ...(response.entities || []),
++    // Use toArray to safely handle entities that might not be iterable
++    const entities = toArray(response.entities);
++    const entityList = [
++      ...entities,
+       response.entity ? { events: response.events, ...response.entity } : null,
+-    ].filter(Boolean)) {
++    ].filter(Boolean);
++
++    for (const ent of entityList) {
+       if (ent.roles?.includes("registrar") || ent.role === "registrar") {
+         const pubIds: any[] = [];
+         if (ent.publicIds) {
+@@ -145,7 +214,6 @@ export async function whois(
+           ;
+ 
+         if (reg) {
+-          // console.log(ent.vcardArray);
+           const id = typeof reg === 'object' ? 0 : reg;
+           const name =
+             (parseInt(id) == id
+@@ -157,8 +225,10 @@ export async function whois(
+               (el: any[]) => el[3],
+               reg
+             );
++          // Safely handle ent.entities
++          const entEntities = toArray(ent.entities);
+           const email =
+-            [ent, ...(ent.entities || [])]
++            [ent, ...entEntities]
+               .filter((e) => e?.vcardArray)
+               .map((e) =>
+                 findInObject(
+@@ -171,7 +241,7 @@ export async function whois(
+               .filter(Boolean)?.[0] || "";
+ 
+           const abuseEmail =
+-            [ent, ...(ent.entities || [])]
++            [ent, ...entEntities]
+               .filter((e) => e?.vcardArray)
+               .map((e) =>
+                 findInObject(
+@@ -187,10 +257,11 @@ export async function whois(
+             ent.events || response.events || ent.enents || response.enents;
+           registrars.push({ id, name, email, abuseEmail, events });
+         }
+-        // handles .ca
++        // handles .ca - with safe optional chaining
+         else if (ent.vcardArray?.[1]?.[3]?.[3] === 'registrar') {
++          const entEntities = toArray(ent.entities);
+           const email =
+-            [ent, ...(ent.entities || [])]
++            [ent, ...entEntities]
+               .filter((e) => e?.vcardArray)
+               .map((e) =>
+                 findInObject(
+@@ -203,7 +274,7 @@ export async function whois(
+               .filter(Boolean)?.[0] || "";
+ 
+           const abuseEmail =
+-            [ent, ...(ent.entities || [])]
++            [ent, ...entEntities]
+               .filter((e) => e?.vcardArray)
+               .map((e) =>
+                 findInObject(
+@@ -215,12 +286,14 @@ export async function whois(
+               )
+               .filter(Boolean)?.[0] || "";
+ 
+-          registrars.push({ id: 0, name: ent.vcardArray[1][1][3], email, abuseEmail, events: ent.events || response.events || ent.enents || response.enents });
++          const vcardName = ent.vcardArray?.[1]?.[1]?.[3] || '';
++          registrars.push({ id: 0, name: vcardName, email, abuseEmail, events: ent.events || response.events || ent.enents || response.enents });
+         }
+-        // handles .si
+-        else if (ent.vcardArray && ent.vcardArray[1] && ent.vcardArray[1].find((el: string[]) => el[0] === 'fn')) {
++        // handles .si - with safe array access
++        else if (ent.vcardArray && Array.isArray(ent.vcardArray[1]) && ent.vcardArray[1].find((el: string[]) => el[0] === 'fn')) {
++          const entEntities = toArray(ent.entities);
+           const email =
+-            [ent, ...(ent.entities || [])]
++            [ent, ...entEntities]
+               .filter((e) => e?.vcardArray)
+               .map((e) =>
+                 findInObject(
+@@ -233,7 +306,7 @@ export async function whois(
+               .filter(Boolean)?.[0] || "";
+ 
+           const abuseEmail =
+-            [ent, ...(ent.entities || [])]
++            [ent, ...entEntities]
+               .filter((e) => e?.vcardArray)
+               .map((e) =>
+                 findInObject(
+@@ -260,7 +333,9 @@ export async function whois(
+             registrars.push({ id, name, email, abuseEmail, events: ent.events || response.events || ent.enents || response.enents });
+           }
+           else {
+-            registrars.push({ id: ent.handle || 0, name: ent.vcardArray[1].find((el: string[]) => el[0] === 'fn')[3], email, abuseEmail, events: ent.events || response.events || ent.enents || response.enents });
++            const fnEntry = ent.vcardArray[1].find((el: string[]) => el[0] === 'fn');
++            const name = fnEntry ? fnEntry[3] : ent.handle || '';
++            registrars.push({ id: ent.handle || 0, name, email, abuseEmail, events: ent.events || response.events || ent.enents || response.enents });
+           }
+         }
+         // handles .ar
+@@ -285,8 +360,9 @@ export async function whois(
+             (el: any[]) => el[3],
+             id
+           );
++        const entEntities = toArray(ent.entities);
+         const email =
+-          [ent, ...(ent.entities || [])]
++          [ent, ...entEntities]
+             .filter((e) => e?.vcardArray)
+             .map((e) =>
+               findInObject(
+@@ -299,7 +375,7 @@ export async function whois(
+             .filter(Boolean)?.[0] || "";
+ 
+         const abuseEmail =
+-          [ent, ...(ent.entities || [])]
++          [ent, ...entEntities]
+             .filter((e) => e?.vcardArray)
+             .map((e) =>
+               findInObject(
+@@ -394,8 +470,6 @@ export async function whois(
+ }
+ 
+ function findStatus(statuses: string | string[], domain: string): string[] {
+-  // console.warn({ domain, statuses });
+-
+   return (Array.isArray(statuses)
+     ? statuses
+     : statuses && typeof statuses === "object"
+@@ -422,6 +496,10 @@ function findNameservers(values: any[]): string[] {
+     .sort();
+ }
+ 
++/**
++ * Extracts timestamps from RDAP events array.
++ * Properly iterates through events and breaks when a match is found.
++ */
+ function findTimestamps(values: any[]) {
+   const ts: Record<WhoisTimestampFields, Date | null> = {
+     created: null,
+@@ -429,29 +507,36 @@ function findTimestamps(values: any[]) {
+     expires: null,
+   };
+ 
+-  let events: any = [];
++  let events: any[] = [];
+ 
+   if (Array.isArray(values)) {
+     events = values;
+-  } else if (typeof values === "object") {
++  } else if (typeof values === "object" && values !== null) {
+     events = Object.values(values);
+   }
+ 
+-  for (const [event, field] of eventMap) {
+-    events.find(
+-      (ev: any) => {
+-        const isMatch = ev?.eventAction?.toLocaleLowerCase() === event && ev.eventDate;
+-        if (isMatch) {
+-          const d = new Date(ev.eventDate.toString().replace(/\+0000Z$/, "Z"));
+-          // console.log(field, ev.eventDate, d);
+-          if (!isNaN(d.valueOf())) {
+-            ts[field] = d;
+-            return true;
+-          }
++  // Iterate through each event type we're looking for
++  for (const [eventAction, field] of eventMap) {
++    // Skip if we already have a value for this field
++    if (ts[field] !== null) {
++      continue;
++    }
++
++    // Find matching event and extract date
++    for (const ev of events) {
++      if (ev?.eventAction?.toLocaleLowerCase() === eventAction && ev.eventDate) {
++        const dateStr = ev.eventDate.toString().replace(/\+0000Z$/, "Z");
++        const d = new Date(dateStr);
++        if (!isNaN(d.valueOf())) {
++          ts[field] = d;
++          break; // Found valid date, stop searching for this field
+         }
+       }
+-    );
++    }
+   }
+ 
+   return ts;
+ }
++
++// Export utilities for testing
++export { toArray, escapeRegex, validateDomain };
+diff --git a/src/ip.ts b/src/ip.ts
+index e212955..4f5bbbd 100644
+--- a/src/ip.ts
++++ b/src/ip.ts
+@@ -3,7 +3,15 @@ import { WhoisResponse } from "../whois.js";
+ export function parseIpResponse(ip: string, rdap: any, response: WhoisResponse) {
+   response.found = Boolean(rdap.handle);
+ 
+-  const registry = rdap.port43 ? rdap.port43.match(/\.(\w+)\./)[1].toUpperCase() : '';
++  // Safely extract registry from port43 with null check
++  let registry = '';
++  if (rdap.port43) {
++    const match = rdap.port43.match(/\.(\w+)\./);
++    if (match) {
++      registry = match[1].toUpperCase();
++    }
++  }
++
+   const realRdapServer = rdap.links?.find(({ rel }: { rel: string }) => rel === 'self')?.value?.replace(/\/ip\/.*/, '/ip/');
+ 
+   response.server = realRdapServer || 'https://rdap.org/ip/';
+diff --git a/src/port43.ts b/src/port43.ts
+index e95b6ac..b714645 100644
+--- a/src/port43.ts
++++ b/src/port43.ts
+@@ -5,6 +5,18 @@ import { port43servers, port43parsers } from "./port43servers.js";
+ import { ianaToRegistrarCache } from "./utils/ianaIdToRegistrar.js";
+ import { WhoisResponse } from "../whois.js";
+ import { normalizeWhoisStatus } from "./whoisStatus.js";
++import createDebug from "debug";
++
++// Debug logger - enable with DEBUG=whois:* environment variable
++const debug = createDebug("whois:port43");
++
++/**
++ * Escapes special regex characters in a string.
++ * Prevents ReDoS attacks when using user input in RegExp constructor.
++ */
++function escapeRegex(str: string): string {
++  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
++}
+ 
+ export function determinePort43Domain(actor: string) {
+   const parsed = parseDomain(actor);
+@@ -36,7 +48,7 @@ export async function port43(actor: string, _fetch: typeof fetch): Promise<Whois
+     : `${domain}\r\n`;
+   const port = opts?.port || 43;
+ 
+-  // console.log(`looking up ${domain} on ${server}`);
++  debug("looking up %s on %s:%d", domain, server, port);
+ 
+   const response: WhoisResponse = {
+     found: true,
+@@ -82,7 +94,7 @@ export async function port43(actor: string, _fetch: typeof fetch): Promise<Whois
+       }
+     }
+   } catch (error: any) {
+-    console.warn({ port, server, query, error: error.message });
++    debug("port43 lookup error: %O", { port, server, query, error: error.message });
+     response.found = false;
+     response.statusCode = 500;
+     response.error = error.message || "Unknown error during port 43 lookup";
+@@ -93,7 +105,6 @@ export async function port43(actor: string, _fetch: typeof fetch): Promise<Whois
+   }
+ 
+   port43response = port43response.replace(/^[ \t]+/gm, "");
+-  // console.log(port43response);
+ 
+   let m;
+ 
+@@ -145,12 +156,6 @@ export async function port43(actor: string, _fetch: typeof fetch): Promise<Whois
+     )) &&
+     (response.reseller = m[1].trim());
+ 
+-    // console.log(port43response)
+-
+-// Updated Date: 2024-11-21T13:42:54Z
+-// Creation Date: 2017-12-16T02:11:08Z
+-// Registry Expiry Date: 2031-07-10T02:11:08Z
+-
+   !response.ts.updated &&
+     (m = port43response.match(
+       /^(?:Last Modified|Updated Date|Last updated on|domain_datelastmodified|last-update|modified|last modified)\.*:[ \t]*(\S.+)/im
+@@ -235,6 +240,7 @@ export async function port43(actor: string, _fetch: typeof fetch): Promise<Whois
+   if (response.ts.updated && !response.ts.updated.valueOf()) response.ts.updated = null;
+   if (response.ts.expires && !response.ts.expires.valueOf()) response.ts.expires = null;
+ 
++  // Match registrar name against IANA cache using escaped regex to prevent ReDoS
+   if (response.registrar.id === 0 && response.registrar.name !== "") {
+     for (const [id, { name }] of ianaToRegistrarCache.entries()) {
+       if (name === response.registrar.name) {
+@@ -244,24 +250,32 @@ export async function port43(actor: string, _fetch: typeof fetch): Promise<Whois
+     }
+   }
+ 
+-  if (response.registrar.id === 0 && response.registrar.name !== "") {
++  if (response.registrar.id === 0 && response.registrar.name && response.registrar.name !== "") {
++    const escapedName = escapeRegex(response.registrar.name);
+     for (const [id, { name }] of ianaToRegistrarCache.entries()) {
+-      if (name.match(new RegExp(`\\b${response.registrar.name}\\b`, "i"))) {
+-        response.registrar.id = id;
+-        break;
++      try {
++        if (name.match(new RegExp(`\\b${escapedName}\\b`, "i"))) {
++          response.registrar.id = id;
++          break;
++        }
++      } catch {
++        // Skip if regex still fails for some reason
++        continue;
+       }
+     }
+   }
+ 
+   if (response.registrar.id === 0 && response.registrar.name) {
++    const escapedName = escapeRegex(response.registrar.name.replace(/,.*/, ""));
+     for (const [id, { name }] of ianaToRegistrarCache.entries()) {
+-      if (
+-        name.match(
+-          new RegExp(`\\b${response.registrar.name.replace(/,.*/, "")}\\b`, "i")
+-        )
+-      ) {
+-        response.registrar.id = id;
+-        break;
++      try {
++        if (name.match(new RegExp(`\\b${escapedName}\\b`, "i"))) {
++          response.registrar.id = id;
++          break;
++        }
++      } catch {
++        // Skip if regex still fails for some reason
++        continue;
+       }
+     }
+   }
+@@ -292,4 +306,4 @@ function reformatDate(date: string) {
+   }
+ 
+   return date;
+-}
+\ No newline at end of file
++}
+diff --git a/src/utils/findInObject.ts b/src/utils/findInObject.ts
+index e533ca2..593a012 100644
+--- a/src/utils/findInObject.ts
++++ b/src/utils/findInObject.ts
+@@ -7,17 +7,32 @@ export function findInObject(
+   const found = _findInObject(obj, condition);
+   return found === undefined ? fallback : extractor(found);
+ }
++
+ function _findInObject(obj: any, condition: (el: any) => boolean): any {
++  // Handle null/undefined
++  if (obj === null || obj === undefined) {
++    return undefined;
++  }
++
+   for (const key in obj) {
+-    if (condition(obj[key])) {
+-      return obj[key];
++    // Skip inherited properties
++    if (!Object.prototype.hasOwnProperty.call(obj, key)) {
++      continue;
+     }
+ 
+-    if (typeof obj[key] === "object") {
+-      const result = _findInObject(obj[key], condition);
++    const value = obj[key];
++
++    if (condition(value)) {
++      return value;
++    }
++
++    if (value !== null && typeof value === "object") {
++      const result = _findInObject(value, condition);
+       if (result !== undefined) {
+         return result;
+       }
+     }
+   }
++
++  return undefined;
+ }

@@ -5,6 +5,12 @@ import { port43servers, port43parsers } from "./port43servers.js";
 import { ianaToRegistrarCache } from "./utils/ianaIdToRegistrar.js";
 import { WhoisResponse } from "../whois.js";
 import { normalizeWhoisStatus } from "./whoisStatus.js";
+import createDebug from "debug";
+import { escapeRegex } from "./utils/escapeRegex.js";
+
+// Debug logger - enable with DEBUG=whois:* environment variable
+const debug = createDebug("whois:port43");
+
 
 export function determinePort43Domain(actor: string) {
   const parsed = parseDomain(actor);
@@ -36,7 +42,7 @@ export async function port43(actor: string, _fetch: typeof fetch): Promise<Whois
     : `${domain}\r\n`;
   const port = opts?.port || 43;
 
-  // console.log(`looking up ${domain} on ${server}`);
+  debug("looking up %s on %s:%d", domain, server, port);
 
   const response: WhoisResponse = {
     found: true,
@@ -82,7 +88,7 @@ export async function port43(actor: string, _fetch: typeof fetch): Promise<Whois
       }
     }
   } catch (error: any) {
-    console.warn({ port, server, query, error: error.message });
+    debug("port43 lookup error: %O", { port, server, query, error: error.message });
     response.found = false;
     response.statusCode = 500;
     response.error = error.message || "Unknown error during port 43 lookup";
@@ -93,7 +99,6 @@ export async function port43(actor: string, _fetch: typeof fetch): Promise<Whois
   }
 
   port43response = port43response.replace(/^[ \t]+/gm, "");
-  // console.log(port43response);
 
   let m;
 
@@ -144,12 +149,6 @@ export async function port43(actor: string, _fetch: typeof fetch): Promise<Whois
       /^(?:Reseller(?: Name)?|reseller_name|reseller):[ \t]*(\S.+)/im
     )) &&
     (response.reseller = m[1].trim());
-
-    // console.log(port43response)
-
-// Updated Date: 2024-11-21T13:42:54Z
-// Creation Date: 2017-12-16T02:11:08Z
-// Registry Expiry Date: 2031-07-10T02:11:08Z
 
   !response.ts.updated &&
     (m = port43response.match(
@@ -235,6 +234,7 @@ export async function port43(actor: string, _fetch: typeof fetch): Promise<Whois
   if (response.ts.updated && !response.ts.updated.valueOf()) response.ts.updated = null;
   if (response.ts.expires && !response.ts.expires.valueOf()) response.ts.expires = null;
 
+  // Match registrar name against IANA cache using escaped regex to prevent ReDoS
   if (response.registrar.id === 0 && response.registrar.name !== "") {
     for (const [id, { name }] of ianaToRegistrarCache.entries()) {
       if (name === response.registrar.name) {
@@ -244,24 +244,32 @@ export async function port43(actor: string, _fetch: typeof fetch): Promise<Whois
     }
   }
 
-  if (response.registrar.id === 0 && response.registrar.name !== "") {
+  if (response.registrar.id === 0 && response.registrar.name && response.registrar.name !== "") {
+    const escapedName = escapeRegex(response.registrar.name);
     for (const [id, { name }] of ianaToRegistrarCache.entries()) {
-      if (name.match(new RegExp(`\\b${response.registrar.name}\\b`, "i"))) {
-        response.registrar.id = id;
-        break;
+      try {
+        if (name.match(new RegExp(`\\b${escapedName}\\b`, "i"))) {
+          response.registrar.id = id;
+          break;
+        }
+      } catch {
+        // Skip if regex still fails for some reason
+        continue;
       }
     }
   }
 
   if (response.registrar.id === 0 && response.registrar.name) {
+    const escapedName = escapeRegex(response.registrar.name.replace(/,.*/, ""));
     for (const [id, { name }] of ianaToRegistrarCache.entries()) {
-      if (
-        name.match(
-          new RegExp(`\\b${response.registrar.name.replace(/,.*/, "")}\\b`, "i")
-        )
-      ) {
-        response.registrar.id = id;
-        break;
+      try {
+        if (name.match(new RegExp(`\\b${escapedName}\\b`, "i"))) {
+          response.registrar.id = id;
+          break;
+        }
+      } catch {
+        // Skip if regex still fails for some reason
+        continue;
       }
     }
   }

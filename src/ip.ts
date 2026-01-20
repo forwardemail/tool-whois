@@ -3,7 +3,15 @@ import { WhoisResponse } from "../whois.js";
 export function parseIpResponse(ip: string, rdap: any, response: WhoisResponse) {
   response.found = Boolean(rdap.handle);
 
-  const registry = rdap.port43 ? rdap.port43.match(/\.(\w+)\./)[1].toUpperCase() : '';
+  // Safely extract registry from port43 with null check
+  let registry = '';
+  if (rdap.port43) {
+    const match = rdap.port43.match(/\.(\w+)\./);
+    if (match) {
+      registry = match[1].toUpperCase();
+    }
+  }
+
   const realRdapServer = rdap.links?.find(({ rel }: { rel: string }) => rel === 'self')?.value?.replace(/\/ip\/.*/, '/ip/');
 
   response.server = realRdapServer || 'https://rdap.org/ip/';
