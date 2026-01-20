@@ -4,7 +4,9 @@ import assert from "node:assert";
 // Import polyfills first
 import "./polyfills.js";
 
-import { toArray, escapeRegex, validateDomain } from "./index.js";
+import { validateDomain } from "./utils/validateDomain.js";
+import { escapeRegex } from "./utils/escapeRegex.js";
+import { toArray } from "./utils/toArray.js";
 
 // ============================================================================
 // toArray utility tests
