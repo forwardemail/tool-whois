@@ -6,17 +6,11 @@ import { ianaToRegistrarCache } from "./utils/ianaIdToRegistrar.js";
 import { WhoisResponse } from "../whois.js";
 import { normalizeWhoisStatus } from "./whoisStatus.js";
 import createDebug from "debug";
+import { escapeRegex } from "./utils/escapeRegex.js";
 
 // Debug logger - enable with DEBUG=whois:* environment variable
 const debug = createDebug("whois:port43");
 
-/**
- * Escapes special regex characters in a string.
- * Prevents ReDoS attacks when using user input in RegExp constructor.
- */
-function escapeRegex(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
 
 export function determinePort43Domain(actor: string) {
   const parsed = parseDomain(actor);

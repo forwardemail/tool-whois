@@ -8,64 +8,24 @@ import { findInObject } from "./utils/findInObject.js";
 import { fixArrays } from "./utils/fixArrays.js";
 import { ianaIdToRegistrar } from "./utils/ianaIdToRegistrar.js";
 import { tldToRdap } from "./utils/tldToRdap.js";
-import { normalizeWhoisStatus } from "./whoisStatus.js";
 import { resolve4 } from "dns/promises";
+import { toArray } from "./utils/toArray.js";
+import { validateDomain } from "./utils/validateDomain.js";
+import { findStatus } from "./utils/findStatus.js";
+import { findNameservers } from "./utils/findNameservers.js";
+import { findTimestamps } from "./utils/findTimestamps.js";
 import createDebug from "debug";
+import { escapeRegex } from "./utils/escapeRegex.js";
 
 // Debug logger - enable with DEBUG=whois:* environment variable
 const debug = createDebug("whois:rdap");
 
-const eventMap = new Map<string, WhoisTimestampFields>([
+export const eventMap = new Map<string, WhoisTimestampFields>([
   ["registration", "created"],
   ["last changed", "updated"],
   ["expiration", "expires"],
   ["expiration date", "expires"],
 ]);
-
-/**
- * Safely converts a value to an array.
- * Handles cases where the value might be null, undefined, or a non-iterable object.
- */
-function toArray<T>(value: T | T[] | null | undefined): T[] {
-  if (value === null || value === undefined) {
-    return [];
-  }
-  if (Array.isArray(value)) {
-    return value;
-  }
-  // Handle object case - some RDAP responses return objects instead of arrays
-  if (typeof value === "object") {
-    return Object.values(value) as T[];
-  }
-  return [];
-}
-
-/**
- * Escapes special regex characters in a string.
- * Prevents ReDoS attacks when using user input in RegExp constructor.
- */
-function escapeRegex(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-/**
- * Validates domain input format.
- * Returns sanitized domain or throws on invalid input.
- */
-function validateDomain(domain: string): string {
-  if (!domain || typeof domain !== 'string') {
-    throw new Error('Domain must be a non-empty string');
-  }
-  // Basic sanitization - trim whitespace
-  const sanitized = domain.trim().toLowerCase();
-  if (sanitized.length === 0) {
-    throw new Error('Domain must be a non-empty string');
-  }
-  if (sanitized.length > 253) {
-    throw new Error('Domain name too long');
-  }
-  return sanitized;
-}
 
 export async function whois(
   origDomain: string,
@@ -476,75 +436,3 @@ export async function whois(
 
   return response;
 }
-
-function findStatus(statuses: string | string[], domain: string): string[] {
-  return (Array.isArray(statuses)
-    ? statuses
-    : statuses && typeof statuses === "object"
-      ? Object.keys(statuses)
-      : typeof statuses === "string"
-        ? statuses.trim().split(/\s*,\s*/)
-        : []
-  ).map((status) => normalizeWhoisStatus(status));
-}
-
-function findNameservers(values: any[]): string[] {
-  let nameservers: any[] = [];
-  if (Array.isArray(values)) {
-    nameservers = values;
-  } else if (typeof values === "object") {
-    nameservers = Object.values(values);
-  }
-
-  return nameservers
-    .map((ns) => ns.ldhName || ns.ldnName || ns.ipAddresses?.v4)
-    .flat()
-    .filter((ns) => ns)
-    .map((ns) => (ns.stringValue || ns).toLocaleLowerCase())
-    .sort();
-}
-
-/**
- * Extracts timestamps from RDAP events array.
- * Properly iterates through events and breaks when a match is found.
- */
-function findTimestamps(values: any[]) {
-  const ts: Record<WhoisTimestampFields, Date | null> = {
-    created: null,
-    updated: null,
-    expires: null,
-  };
-
-  let events: any[] = [];
-
-  if (Array.isArray(values)) {
-    events = values;
-  } else if (typeof values === "object" && values !== null) {
-    events = Object.values(values);
-  }
-
-  // Iterate through each event type we're looking for
-  for (const [eventAction, field] of eventMap) {
-    // Skip if we already have a value for this field
-    if (ts[field] !== null) {
-      continue;
-    }
-
-    // Find matching event and extract date
-    for (const ev of events) {
-      if (ev?.eventAction?.toLocaleLowerCase() === eventAction && ev.eventDate) {
-        const dateStr = ev.eventDate.toString().replace(/\+0000Z$/, "Z");
-        const d = new Date(dateStr);
-        if (!isNaN(d.valueOf())) {
-          ts[field] = d;
-          break; // Found valid date, stop searching for this field
-        }
-      }
-    }
-  }
-
-  return ts;
-}
-
-// Export utilities for testing
-export { toArray, escapeRegex, validateDomain };
